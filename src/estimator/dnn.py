@@ -1,9 +1,7 @@
-from tensorflow_estimator.python.estimator import model_fn
+import tensorflow as tf
+from tensorflow.python.ops import variable_scope
 
 from .base_model import BaseModel
-from tensorflow.python.ops import variable_scope
-import tensorflow as tf
-from tensorflow.python.ops.losses import losses
 
 
 class Dnn(BaseModel):
@@ -39,18 +37,3 @@ class Dnn(BaseModel):
             deep_logits = tf.layers.dense(deep_net, units=1, activation=None,
                                           kernel_initializer=self.kernel_initializer, name=logits_scope)
         return deep_logits
-
-    def get_model(self, features, labels, mode, params) -> model_fn.EstimatorSpec:
-
-        if not self.deep_hidden_units:
-            raise ValueError("Need deep_hidden_units given")
-
-        is_training = False
-        if mode == tf.estimator.ModeKeys.TRAIN:
-            is_training = True
-
-        logits = self._forward(features, is_training)
-
-        loss = losses.sigmoid_cross_entropy(labels, logits)
-
-        return self.get_estimator_spec(mode, logits, loss, labels)

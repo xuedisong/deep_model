@@ -88,21 +88,6 @@ class DeepFMSCSLOSS(BaseModel):
         all_logits = fm_logits + deep_logits
         return all_logits
 
-    def get_model(self, features, labels, mode, params):
-        if not self.deep_hidden_units:
-            raise ValueError("Need deep_hidden_units given")
-
-        is_training = False
-        if mode == tf.estimator.ModeKeys.TRAIN:
-            is_training = True
-        all_logits = self._forward(features, is_training)
-
-        if mode != tf.estimator.ModeKeys.PREDICT:
-            # loss = losses.sigmoid_cross_entropy(labels, all_logits)
-            loss_all = tf.nn.weighted_cross_entropy_with_logits(labels, all_logits, 50)
-            loss = losses.compute_weighted_loss(loss_all)
-
-        else:
-            loss = None
-
-        return self.get_estimator_spec(mode, all_logits, loss, labels)
+    def _get_loss(self, labels, logits):
+        loss_all = tf.nn.weighted_cross_entropy_with_logits(labels, logits, 50)
+        return losses.compute_weighted_loss(loss_all)

@@ -24,9 +24,7 @@ set -e 对 . file.sh 有效
 
 ## 代码结构说明
 
-```
 tf 的API，主要是Estimator API，
-1. FeatureColumn 是构建model网络。
+1. FeatureColumn 构建model网络input layer，可能有点属于特征工程部分。
 2. input_fn 中会用到 feature_name,type来构建TFRecord,或者是input tensor
-3. 其次就主要是构建网络的除FeatureColumn input layer的其他network了。 
-```
+3. 实现**estimator.base_model.BaseModel._forward**
