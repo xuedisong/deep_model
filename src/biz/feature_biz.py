@@ -4,14 +4,11 @@ import tensorflow as tf
 from tensorflow.python.feature_column.feature_column_v2 import FeatureColumn
 
 from bean.feature import Feature
-from common import context
 from common.constant import *
 from common.constant import FieldType
 from utils import log_util, safe_util
 from utils.args_util import FLAGS
 from utils.stream_util import Stream
-
-__all__ = ['parse_feature']
 
 
 def parse_feature(_feature_info_path: str, _feature_dict_path: str) -> List[Feature]:
@@ -94,6 +91,8 @@ def build_column(featureList: List[Feature], embedding_size, combiner=None, max_
 
 
 if __name__ == '__main__':
+    from common import context
+
     _feature_info_path = FLAGS.feature_info
     _feature_dict_path = FLAGS.dict_path
     feature_list = parse_feature(_feature_info_path, _feature_dict_path)
