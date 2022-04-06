@@ -28,3 +28,13 @@ tf 的API，主要是Estimator API，
 1. FeatureColumn 构建model网络input layer，可能有点属于特征工程部分。
 2. input_fn 中会用到 feature_name,type来构建TFRecord,或者是input tensor
 3. 实现**estimator.base_model.BaseModel._forward**
+
+```
+todo: 实际上就一个接口：_forward,转换操作，然后就完事了。
+因为接口和抽象类，本质区别是自定义成员属性。而成员属性的真正含义，应该是实例在方法执行时，自身属性也发生变化，
+但其实这个不需要成员属性。也就是一个biz的函数而已。之前的抽象类，是路径实例在成员属性上，也就是context会发生变化。
+所以这个我再改造下。
+
+todo:
+应该有 TFRecord 直接得到Tensor DF的一个Tensor 直接输出的形式，即直接衔接起input_fn和model_fn。直接输出。的正向逻辑。
+```
