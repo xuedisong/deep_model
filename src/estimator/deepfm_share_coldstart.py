@@ -1,8 +1,11 @@
 from tensorflow.python.feature_column.feature_column import input_layer
+
+from utils.stream_util import Stream
 from .base_model import BaseModel
 from tensorflow.python.ops import variable_scope
 import tensorflow as tf
 from tensorflow.python.ops.losses import losses
+from common.context import featureList
 
 class DeepFMSCS(BaseModel):
     def __init__(self, **params):
@@ -25,7 +28,7 @@ class DeepFMSCS(BaseModel):
         for embed_col in embed_column:
             #### embedding_table build
             feature_name = embed_col.name.split('_')[0]
-            vocabulary_list = self.mp.vocabulary_map.get(feature_name)
+            vocabulary_list = Stream(featureList).filter(lambda feature:feature.get_name()==feature_name).find_first().get_valueList()
             table = tf.contrib.lookup.index_table_from_tensor(mapping = vocabulary_list, default_value=-1,num_oov_buckets=1)
             #t = tf.glorot_uniform_initializer()
             #t = tf.initializers.he_normal()

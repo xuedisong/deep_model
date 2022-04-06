@@ -1,18 +1,15 @@
-import tensorflow as tf
-import numpy as np
 import os
-# from param_parser import *
-# from factory import *
-# from data_handler import *
-from data_handler import FeatureColumn, MappingParser
-from utils.args_util import FLAGS
-from estimator import *
+
+import biz.feature_biz
 from biz.factory import *
+from common import context
+from estimator import *
+from utils.args_util import FLAGS
 
 os.environ['CUDA_VISIBLE_DEVICES'] = '0'
 
 
-def get_estimator(model_name):
+def _get_estimator(model_name):
     if not model_name:
         raise ValueError('Need given model name for estimator')
 
@@ -32,9 +29,9 @@ def get_estimator(model_name):
         raise ValueError('Unrecognized model name {0}'.format(model_name))
 
 
-def build_estimator():
+def build_estimator() -> tf.estimator.Estimator:
     # model class and config
-    model_class = get_estimator(FLAGS.model_name)
+    model_class = _get_estimator(FLAGS.model_name)
     # tf.device('/gpu:2')
     gpu_options = tf.GPUOptions(per_process_gpu_memory_fraction=0.3, allow_growth=True)
     run_config = tf.estimator.RunConfig().replace(
@@ -44,8 +41,7 @@ def build_estimator():
         keep_checkpoint_max=2500)
 
     # feature column
-    column_builder = FeatureColumn(MappingParser())
-    columns_dict = column_builder.build_column(FLAGS.embedding_size)
+    columns_dict = biz.feature_biz.build_column(context.featureList, FLAGS.embedding_size)
 
     # optimizer
     linear_optimizer = get_optimizer(FLAGS.lr_optimizer, learning_rate=FLAGS.lr_learning_rate)
@@ -74,7 +70,6 @@ def build_estimator():
         kernel_initializer=kernel_initializer,
         activation_func=activation_func,
         config=run_config,
-        mp=MappingParser(),
         embedding_size=FLAGS.embedding_size
     )
 
