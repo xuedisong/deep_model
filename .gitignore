@@ -1,4 +1,4 @@
 model
 .idea
 __pycache__
-config.local
+local
