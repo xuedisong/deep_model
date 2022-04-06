@@ -1,4 +1,4 @@
-from typing import Mapping, List
+from typing import List
 
 from utils import json_util
 
@@ -38,14 +38,3 @@ class Feature(object):
 
     def __str__(self):
         return json_util.of(self)
-
-
-class FeatureBO(object):
-    def __init__(self, _featureMap: Mapping[str, Feature], _featureValuesMap: Mapping[str, List[str]]):
-        """
-        特征信息
-        :param _featureMap: 特征
-        :param _featureValuesMap: 特征值列表
-        """
-        self.featureMap: Mapping[str, Feature] = _featureMap
-        self.featureValuesMap: Mapping[str, List[str]] = _featureValuesMap

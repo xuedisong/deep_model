@@ -17,6 +17,7 @@ class BaseModel(object):
         self.deep_hidden_units = self._read_param('deep_hidden_units', **params)
         self.deep_optimizer = self._read_param('deep_optimizer', **params)
         self.wide_optimizer = self._read_param('wide_optimizer', **params)
+        self.featureList = self._read_param('featureList', **params)
         self.columns_dict = self._read_param('columns_dict', **params)
         self.dropout = self._read_param('dropout', **params)
         self.batch_norm = self._read_param('batch_norm', **params)

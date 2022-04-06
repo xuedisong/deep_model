@@ -1,6 +1,4 @@
-from functools import reduce
-from typing import TypeVar, Callable, List, Set, Generic, Dict, Iterable, Optional, Any
-from itertools import islice, chain
+from typing import TypeVar, Callable, Generic
 
 T = TypeVar('T')
 R = TypeVar('R')

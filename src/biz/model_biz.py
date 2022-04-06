@@ -41,7 +41,8 @@ def build_estimator() -> tf.estimator.Estimator:
         keep_checkpoint_max=2500)
 
     # feature column
-    columns_dict = biz.feature_biz.build_column(context.featureList, FLAGS.embedding_size)
+    featureList = context.featureList
+    columns_dict = biz.feature_biz.build_column(featureList, FLAGS.embedding_size)
 
     # optimizer
     linear_optimizer = get_optimizer(FLAGS.lr_optimizer, learning_rate=FLAGS.lr_learning_rate)
@@ -63,6 +64,7 @@ def build_estimator() -> tf.estimator.Estimator:
         deep_hidden_units=hidden_units,
         deep_optimizer=dnn_optimizer,
         wide_optimizer=linear_optimizer,
+        featureList=featureList,
         columns_dict=columns_dict,
         dropout=FLAGS.dnn_dropout,
         batch_norm=FLAGS.batch_norm,

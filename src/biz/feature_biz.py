@@ -1,4 +1,4 @@
-from typing import Tuple
+from typing import *
 
 import tensorflow as tf
 from tensorflow.python.feature_column.feature_column_v2 import FeatureColumn
@@ -7,10 +7,8 @@ from bean.feature import Feature
 from common import context
 from common.constant import *
 from common.constant import FieldType
-from utils import safe_util
+from utils import log_util, safe_util
 from utils.args_util import FLAGS
-from utils.log_util import err_log
-from utils.stream_util import *
 from utils.stream_util import Stream
 
 __all__ = ['parse_feature']
@@ -88,7 +86,7 @@ def build_column(featureList: List[Feature], embedding_size, combiner=None, max_
             fc = tf.feature_column.numeric_column(featureName, shape=1, default_value=0.0, dtype=tf.float32)
             column_result.setdefault('value_fc', []).append(fc)
         else:
-            err_log('Warning! Wrong feature type {}!'.format(featureType))
+            log_util.err_log('Warning! Wrong feature type {}!'.format(featureType))
 
     column_result = dict()
     Stream(featureList).for_each(lambda feature: feature_process(feature, column_result))
