@@ -8,7 +8,7 @@ from common import context
 from utils.args_util import FLAGS
 
 
-def main(argv):
+def main(_):
     input_fn_train = lambda: input_biz.input_fn(context.featureList, FLAGS.train_data, epoch_num=FLAGS.train_epochs,
                                                 batch_size=FLAGS.batch_size, shuffle=FLAGS.shuffle,
                                                 drop_remainder=True)
@@ -24,4 +24,5 @@ def main(argv):
 if __name__ == '__main__':
     print("init.source_root_path:", init.source_root_path)
     print("FLAGS:", FLAGS.__dict__)
+    tf.logging.set_verbosity(tf.logging.INFO)
     tf.app.run(main=main)

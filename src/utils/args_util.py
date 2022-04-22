@@ -68,4 +68,30 @@ parser.add_argument(
 parser.add_argument(
     '--dnn_learning_rate', type=float, default=0.01, help='the learning rate of deep part')
 
+# dist env
+parser.add_argument("--dist_mode", type=int, default=0,
+                    help="distribution mode {0-local, 1-single_dist, 2-multi_dist}")
+parser.add_argument("--ps_hosts", type=str, default='localhost:2222',
+                    help="Comma-separated list of hostname:port pairs")
+parser.add_argument("--worker_hosts", type=str, default='localhost:2223,localhost:2224,localhost:2225',
+                    help="Comma-separated list of hostname:port pairs")
+parser.add_argument("--job_name", type=str, default='', help="One of 'ps', 'worker'")
+parser.add_argument("--task_index", type=int, default=0, help="Index of task within the job")
+parser.add_argument("--num_threads", type=int, default=16, help="Number of threads")
+parser.add_argument("--num_epochs", type=int, default=20, help="Number of epochs")
+parser.add_argument("--log_steps", type=int, default=1000, help="save summary every steps")
+parser.add_argument("--save_checkpoints_secs", type=int, default=10, help="save checkpoints every seconds")
+parser.add_argument("--learning_rate", type=float, default=0.0005, help="learning rate")
+parser.add_argument("--l2_reg", type=float, default=0.01, help="L2 regularization")
+parser.add_argument("--optimizer", type=str, default='Adam', help="optimizer type {Adam, Adagrad, GD, Momentum}")
+parser.add_argument("--deep_layers", type=str, default='20,10,5', help="deep layers")
+parser.add_argument("--dcn_layers", type=int, default=3, help="deep layers")
+parser.add_argument("--dropout", type=str, default='0.7,0.7,0.5', help="dropout rate")
+parser.add_argument("--data_dir", type=str, default='', help="data dir")
+parser.add_argument("--dt_dir", type=str, default='', help="data dt partition")
+parser.add_argument("--servable_model_dir", type=str, default='export',
+                    help="export servable model for TensorFlow Serving")
+parser.add_argument("--task_type", type=str, default='train', help="task type {train, infer, eval, export}")
+parser.add_argument("--clear_existing_model", type=bool, default=False, help="clear existing model or not")
+
 FLAGS, _ = parser.parse_known_args()
