@@ -76,3 +76,39 @@ def input_fn(featureList: List[Feature], data_dir, epoch_num, batch_size, shuffl
         iterator = data_set.make_one_shot_iterator()
         features, labels = iterator.get_next("iterator")
         return features, labels
+
+
+if __name__ == '__main__':
+    import tensorflow as tf
+    from common import context
+    from utils.args_util import FLAGS
+
+    iterator, features, labels = input_fn(context.featureList, FLAGS.train_data, epoch_num=FLAGS.train_epochs,
+                                          batch_size=100,
+                                          shuffle=FLAGS.shuffle, return_iterator=True, drop_remainder=True)
+
+    data_iter = iterator.get_next()  # 和 iterator.get_next("iterator") 相同
+
+    sess = tf.Session()
+    sess.run(tf.global_variables_initializer())
+    sess.run(iterator.initializer)
+
+    count = 0
+    while True:
+        try:
+            feature, label = sess.run(data_iter)  # data_iter 是个(tensor,tensor)元组，需要tf.sess运行才知道其实际的形状及值。
+            # print(count)
+            # print(tf.get_collection('parse_value'))
+            # print(tf.get_collection('str_columns'))
+            for k, v in feature.items():
+                print(k)
+                print(v.shape)
+                print(v)
+                break
+            print(label.shape)
+            print(label)
+            count += 1
+        except tf.errors.OutOfRangeError:
+            print("break")
+            break
+    print("end")

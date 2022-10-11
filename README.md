@@ -15,10 +15,52 @@ conda deactivate
 
 - tensorflow版本: 1.13.1
 - 1.8版本以后 需要手动开启eager模式
-自测输入函数代码
-输入函数 解析文件，是python原生代码的，没有利用tf的API,可以直接debug.
+  自测输入函数代码
+  输入函数 解析文件，是python原生代码的，没有利用tf的API,可以直接debug.
+  但是这些debug出来的可以看出是tensor了，但是tensor里的具体内容是看不出来的。
+
+自测 输入函数的具体内容
+
+```python
+feature_info_file = '../../data/data_demo/feature_info.txt'
+dict_info_file = '../../data/data_demo/dict.txt'
+data_dir = '../../data/data_demo/train_demo.txt'
+
+import tensorflow as tf
+from biz import input_biz
+from common import context
+
+sess = tf.Session()
+sess.run(tf.global_variables_initializer())
+
+iterator, features, labels = input_biz.input_fn(context.featureList, data_dir, epoch_num=2, batch_size=10000,
+                                                shuffle=1, return_iterator=True, drop_remainder=True)
+
+data_iter = iterator.get_next()
+
+sess = tf.Session()
+sess.run(tf.global_variables_initializer())
+sess.run(iterator.initializer)
+
+count = 0
+while True:
+    try:
+        feature, label = sess.run(data_iter)
+        print(count)
+        print(tf.get_collection('parse_value'))
+        print(tf.get_collection('str_columns'))
+        # for k, v in feature.items():
+        #	print(k)
+        #	print(v.shape)
+        # print(label.shape)
+        count += 1
+    except tf.errors.OutOfRangeError:
+        break
+features, labels = iterator.get_next("iterator")
+```
 
 自测nfm代码
+
 ```python
 import tensorflow as tf
 
