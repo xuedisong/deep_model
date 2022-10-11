@@ -14,7 +14,47 @@ conda deactivate
 ```
 
 - tensorflow版本: 1.13.1
+- 1.8版本以后 需要手动开启eager模式
+```python
+import tensorflow as tf
+tf.__version__
+tf.enable_eager_execution()
+tf.executing_eagerly()
+a=tf.constant([[1,1],[2,2],[3,3]],dtype=tf.float32)
+tf.math.l2_normalize(a, [0,1])
 
+features = {'user_item': [[0, 1, 2], [1, 2, 2], [0, 2, 3], [1, 2, 3]]}
+user_item=tf.contrib.feature_column.sequence_categorical_column_with_vocabulary_list("user_item",
+                                                                               vocabulary_list=[0, 1, 2, 3],
+                                                                               default_value=0)
+fc=tf.feature_column.embedding_column(user_item, dimension=2)
+input_layer,sequence_length=tf.contrib.feature_column.sequence_input_layer(features, fc)
+
+clicked_model_feature=input_layer #(4,3,2)
+clicked_ptitle_feature=input_layer 
+clicked_count_features=input_layer
+concat_feature = tf.concat([clicked_model_feature, clicked_ptitle_feature, clicked_count_features], axis=-1)#(4,3,6)
+dense_net = tf.layers.dense(inputs=concat_feature,
+                            units=clicked_model_feature.shape[2],
+                            kernel_initializer=tf.initializers.random_normal(),
+                            activation=tf.nn.leaky_relu) #(4,3,2)
+attention_score = tf.layers.dense(inputs=dense_net,
+                                  units=1,
+                                  kernel_initializer=tf.initializers.random_normal(),
+                                  activation=tf.nn.leaky_relu) #(4,3,1)
+attention_score = tf.transpose(attention_score, perm=[0, 2, 1]) # (4,1,3)
+attention_score = tf.nn.softmax(attention_score, axis=-1) # (4,1,3)
+attention_output = tf.matmul(attention_score, dense_net) # (4,1,2)
+attention_output = tf.reshape(attention_output, [-1, attention_output.shape[2]]) #(4,2)
+attention_output # B=w2'(Aw1)'(Aw1);A=(n,d1),w1=(d1,k),w2=(k,1),B=(1,k);k=2,n=3 一种pooling的方式。含义就是将某列作为权重值，进一步放大其影响。
+#d1=6,从A=(n,d1)变成B=(1,k),C=Aw1=(n,k),B=w2'C'C=(Cw2)'C,Cw2=(n,1),Cw2=softmax(Cw2)
+
+labels=tf.constant([[1,0],[0,1],[1,0]],dtype=tf.float32)
+logits=tf.constant([[1,1],[2,2],[3,3]],dtype=tf.float32)
+loss=tf.losses.softmax_cross_entropy(labels, logits, scope="loss")
+```
+双塔方案：loss采用softmax，但是物品向量侧需要由物品属性DNN得来，物品ID使用预训练的物品ID/或者就是物品ID。
+这样的思路是，尽量少训练参数，防止模型过拟合，因为大量的one-hot embedding将会产生大量的训练边。所以GCN用户侧到时候也可以直接使用训练好的embedding。
 ## 注意事项
 
 ```
