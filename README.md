@@ -60,6 +60,7 @@ hidden_layer_2 = tf.layers.dense(hidden_layer_1, units=2, activation=tf.nn.relu,
                                  kernel_initializer='he_normal', name='hidden_layer_2')
 logits = tf.layers.dense(hidden_layer_2, units=1, activation=None,
                          kernel_initializer='he_normal', name='logits')  # 思考都是relu时，如果隐层单元少时，logit值很多是0。
+all_logits = logits + logits
 ```
 
 自测attention代码
