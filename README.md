@@ -19,45 +19,7 @@ conda deactivate
   输入函数 解析文件，是python原生代码的，没有利用tf的API,可以直接debug.
   但是这些debug出来的可以看出是tensor了，但是tensor里的具体内容是看不出来的。
 
-自测 输入函数的具体内容
-
-```python
-feature_info_file = '../../data/data_demo/feature_info.txt'
-dict_info_file = '../../data/data_demo/dict.txt'
-data_dir = '../../data/data_demo/train_demo.txt'
-
-import tensorflow as tf
-from biz import input_biz
-from common import context
-
-sess = tf.Session()
-sess.run(tf.global_variables_initializer())
-
-iterator, features, labels = input_biz.input_fn(context.featureList, data_dir, epoch_num=2, batch_size=10000,
-                                                shuffle=1, return_iterator=True, drop_remainder=True)
-
-data_iter = iterator.get_next()
-
-sess = tf.Session()
-sess.run(tf.global_variables_initializer())
-sess.run(iterator.initializer)
-
-count = 0
-while True:
-    try:
-        feature, label = sess.run(data_iter)
-        print(count)
-        print(tf.get_collection('parse_value'))
-        print(tf.get_collection('str_columns'))
-        # for k, v in feature.items():
-        #	print(k)
-        #	print(v.shape)
-        # print(label.shape)
-        count += 1
-    except tf.errors.OutOfRangeError:
-        break
-features, labels = iterator.get_next("iterator")
-```
+自测 输入函数的具体内容 见 src/biz/input_biz.py
 
 自测nfm代码
 
@@ -68,11 +30,27 @@ tf.__version__
 tf.enable_eager_execution()
 tf.executing_eagerly()
 
-features = {'user_item': [[0], [1], [0], [1]]}
-user_item = tf.feature_column.categorical_column_with_vocabulary_list("user_item", vocabulary_list=[0, 1, 2, 3])
-fc = tf.feature_column.embedding_column(user_item, dimension=2)
-deep_net = tf.feature_column.input_layer(features=features, feature_columns=fc)
+features = {'wk': [['2-wk^6'],
+                   ['2-wk^0'],
+                   ['2-wk^1'],
+                   ['2-wk^2'],
+                   ['2-wk^6']],
+            'hr': [['3-hr^08'], ['3-hr^09'], ['3-hr^16'], ['3-hr^23'], ['3-hr^09']]}
+fc_wk = tf.feature_column.categorical_column_with_vocabulary_list("wk", vocabulary_list=['2-wk^0', '2-wk^1', '2-wk^2',
+                                                                                         '2-wk^6'])
+fc_hr = tf.feature_column.categorical_column_with_vocabulary_list("hr",
+                                                                  vocabulary_list=['3-hr^08', '3-hr^09', '3-hr^16',
+                                                                                   '3-hr^23'])
+
+fc_wk = tf.feature_column.embedding_column(fc_wk, dimension=2)
+fc_hr = tf.feature_column.embedding_column(fc_hr, dimension=2)
+deep_net = tf.feature_column.input_layer(features=features,
+                                         feature_columns=[fc_hr, fc_wk])  # 会按照feature_columns=[fc_hr, fc_wk]的顺序拼接tensor
+
+
 ```
+
+自测attention代码
 
 ```python
 import tensorflow as tf
