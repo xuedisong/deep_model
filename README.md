@@ -44,10 +44,22 @@ fc_hr = tf.feature_column.categorical_column_with_vocabulary_list("hr",
 
 fc_wk = tf.feature_column.embedding_column(fc_wk, dimension=2)
 fc_hr = tf.feature_column.embedding_column(fc_hr, dimension=2)
-deep_net = tf.feature_column.input_layer(features=features,
-                                         feature_columns=[fc_hr, fc_wk])  # 会按照feature_columns=[fc_hr, fc_wk]的顺序拼接tensor
-
-
+deep_net_concat = tf.feature_column.input_layer(features=features,
+                                                feature_columns=[fc_hr,
+                                                                 fc_wk])  # 会按照feature_columns=[fc_hr, fc_wk]的顺序拼接tensor
+deep_net_hr = tf.feature_column.input_layer(features=features, feature_columns=[fc_hr])
+deep_net_wk = tf.feature_column.input_layer(features=features, feature_columns=[fc_wk])
+bi_layer = tf.multiply(deep_net_hr, deep_net_wk)
+bi_layer = tf.add(bi_layer, tf.multiply(deep_net_hr, deep_net_wk))  # 交叉项 sum pooling,nfm侧
+interaction_concat = tf.concat([tf.multiply(deep_net_hr, deep_net_wk),
+                                tf.multiply(deep_net_hr, deep_net_wk)], 1)  # 交叉项concat pooling,实验侧
+emb_concat = tf.concat([deep_net_hr, deep_net_wk], 1)  # emb concat po0ling,deepfm deep侧
+hidden_layer_1 = tf.layers.dense(bi_layer, units=3, activation=tf.nn.relu,
+                                 kernel_initializer='he_normal', name='hidden_layer_1')
+hidden_layer_2 = tf.layers.dense(hidden_layer_1, units=2, activation=tf.nn.relu,
+                                 kernel_initializer='he_normal', name='hidden_layer_2')
+logits = tf.layers.dense(hidden_layer_2, units=1, activation=None,
+                         kernel_initializer='he_normal', name='logits')  # 思考都是relu时，如果隐层单元少时，logit值很多是0。
 ```
 
 自测attention代码
