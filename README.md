@@ -19,6 +19,39 @@ conda deactivate
   输入函数 解析文件，是python原生代码的，没有利用tf的API,可以直接debug.
   但是这些debug出来的可以看出是tensor了，但是tensor里的具体内容是看不出来的。
 
+自测 embedding table
+
+```python
+import tensorflow as tf
+
+tf.__version__
+tf.enable_eager_execution()
+tf.executing_eagerly()
+
+embedding_size=10
+features = {'wk': [['2-wk^6'],
+                   ['2-wk^0'],
+                   ['2-wk^1'],
+                   ['2-wk^2'],
+                   ['2-wk^6']],
+            'hr': [['3-hr^08'], ['3-hr^09'], ['3-hr^16'], ['3-hr^23'], ['3-hr^09']]}
+feature_name='wk'
+coldstart_names=['wk']
+vocabulary_list = ['2-wk^0', '2-wk^1', '2-wk^2','2-wk^6']
+
+t = tf.initializers.random_normal(mean=0, stddev=0.1)
+embed_matrix=tf.get_variable(name=feature_name+'_embmatrix',shape=[len(vocabulary_list),embedding_size],initializer=t,trainable=True)
+if feature_name in coldstart_names:
+    oov_embed = tf.reduce_mean(embed_matrix,0)
+else:
+    oov_embed = tf.zeros([embedding_size])
+embed_all_matrix = tf.concat([embed_matrix,[oov_embed]],0,name=feature_name + '_concat')
+
+table = tf.contrib.lookup.index_table_from_tensor(mapping = vocabulary_list, default_value=-1,num_oov_buckets=1)
+tags = table.lookup(features[feature_name])
+
+```
+
 自测 输入函数的具体内容 见 src/biz/input_biz.py
 
 自测nfm代码
@@ -61,6 +94,10 @@ hidden_layer_2 = tf.layers.dense(hidden_layer_1, units=2, activation=tf.nn.relu,
 logits = tf.layers.dense(hidden_layer_2, units=1, activation=None,
                          kernel_initializer='he_normal', name='logits')  # 思考都是relu时，如果隐层单元少时，logit值很多是0。
 all_logits = logits + logits
+import operator
+import functools
+
+functools.reduce(operator.add, [logits, logits])
 ```
 
 自测attention代码
