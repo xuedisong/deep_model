@@ -19,6 +19,19 @@ conda deactivate
   输入函数 解析文件，是python原生代码的，没有利用tf的API,可以直接debug.
   但是这些debug出来的可以看出是tensor了，但是tensor里的具体内容是看不出来的。
 
+自测 数据流
+```python
+import tensorflow as tf
+
+tf.__version__
+tf.enable_eager_execution()
+tf.executing_eagerly()
+data=tf.range(0,10)
+data=tf.data.Dataset.from_tensor_slices(data)
+data1=data.repeat(None)
+for i in data1:
+    print(i.numpy())
+```
 自测 esmm
 ```python
 import tensorflow as tf
