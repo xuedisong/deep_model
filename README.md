@@ -19,6 +19,35 @@ conda deactivate
   输入函数 解析文件，是python原生代码的，没有利用tf的API,可以直接debug.
   但是这些debug出来的可以看出是tensor了，但是tensor里的具体内容是看不出来的。
 
+自测 esmm
+```python
+import tensorflow as tf
+
+tf.__version__
+tf.enable_eager_execution()
+tf.executing_eagerly()
+features = {'wk': [['2-wk^6'],
+                   ['2-wk^0'],
+                   ['2-wk^1'],
+                   ['2-wk^2'],
+                   ['2-wk^6']],
+            'hr': [['3-hr^08'], ['3-hr^09'], ['3-hr^16'], ['3-hr^23'], ['3-hr^09']]}
+fc_wk = tf.feature_column.categorical_column_with_vocabulary_list("wk", vocabulary_list=['2-wk^0', '2-wk^1', '2-wk^2',
+                                                                                         '2-wk^6'])
+fc_hr = tf.feature_column.categorical_column_with_vocabulary_list("hr",
+                                                                  vocabulary_list=['3-hr^08', '3-hr^09', '3-hr^16',
+                                                                                   '3-hr^23'])
+
+fc_wk = tf.feature_column.embedding_column(fc_wk, dimension=2)
+fc_hr = tf.feature_column.embedding_column(fc_hr, dimension=2)
+# fc_hr = tf.feature_column.indicator_column(fc_hr)
+fc_wk.name
+
+emb_tensors=[tf.feature_column.input_layer(features=features,feature_columns=fc_wk),tf.feature_column.input_layer(features=features,feature_columns=fc_wk)]
+
+deep_net=tf.concat(emb_tensors,1)
+```
+
 自测 embedding table
 
 ```python
