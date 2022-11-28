@@ -19,20 +19,40 @@ conda deactivate
   输入函数 解析文件，是python原生代码的，没有利用tf的API,可以直接debug.
   但是这些debug出来的可以看出是tensor了，但是tensor里的具体内容是看不出来的。
 
-自测 数据流
+自测 loss
+
 ```python
 import tensorflow as tf
 
 tf.__version__
 tf.enable_eager_execution()
 tf.executing_eagerly()
-data=tf.range(0,10)
-data=tf.data.Dataset.from_tensor_slices(data)
-data1=data.repeat(None)
+logit = tf.convert_to_tensor([[1], [2], [3], [4], [5], [6]], dtype=tf.float32)
+label = tf.convert_to_tensor([[0], [1], [0], [0], [0], [1]], dtype=tf.float32)
+prob = tf.sigmoid(logit)
+sample_loss = tf.multiply(50 * label, -tf.log(prob)) + tf.multiply(1 - label, -tf.log(1 - prob))
+loss = tf.reduce_sum(sample_loss, 0) / len(sample_loss)
+sample_loss = tf.nn.weighted_cross_entropy_with_logits(label, logit, 50)
+loss = tf.losses.compute_weighted_loss(sample_loss)
+```
+
+自测 数据流
+
+```python
+import tensorflow as tf
+
+tf.__version__
+tf.enable_eager_execution()
+tf.executing_eagerly()
+data = tf.range(0, 10)
+data = tf.data.Dataset.from_tensor_slices(data)
+data1 = data.repeat(None)
 for i in data1:
     print(i.numpy())
 ```
+
 自测 esmm
+
 ```python
 import tensorflow as tf
 
@@ -56,9 +76,10 @@ fc_hr = tf.feature_column.embedding_column(fc_hr, dimension=2)
 # fc_hr = tf.feature_column.indicator_column(fc_hr)
 fc_wk.name
 
-emb_tensors=[tf.feature_column.input_layer(features=features,feature_columns=fc_wk),tf.feature_column.input_layer(features=features,feature_columns=fc_wk)]
+emb_tensors = [tf.feature_column.input_layer(features=features, feature_columns=fc_wk),
+               tf.feature_column.input_layer(features=features, feature_columns=fc_wk)]
 
-deep_net=tf.concat(emb_tensors,1)
+deep_net = tf.concat(emb_tensors, 1)
 ```
 
 自测 embedding table
@@ -70,26 +91,27 @@ tf.__version__
 tf.enable_eager_execution()
 tf.executing_eagerly()
 
-embedding_size=10
+embedding_size = 10
 features = {'wk': [['2-wk^6'],
                    ['2-wk^0'],
                    ['2-wk^1'],
                    ['2-wk^2'],
                    ['2-wk^6']],
             'hr': [['3-hr^08'], ['3-hr^09'], ['3-hr^16'], ['3-hr^23'], ['3-hr^09']]}
-feature_name='wk'
-coldstart_names=['wk']
-vocabulary_list = ['2-wk^0', '2-wk^1', '2-wk^2','2-wk^6']
+feature_name = 'wk'
+coldstart_names = ['wk']
+vocabulary_list = ['2-wk^0', '2-wk^1', '2-wk^2', '2-wk^6']
 
 t = tf.initializers.random_normal(mean=0, stddev=0.1)
-embed_matrix=tf.get_variable(name=feature_name+'_embmatrix',shape=[len(vocabulary_list),embedding_size],initializer=t,trainable=True)
+embed_matrix = tf.get_variable(name=feature_name + '_embmatrix', shape=[len(vocabulary_list), embedding_size],
+                               initializer=t, trainable=True)
 if feature_name in coldstart_names:
-    oov_embed = tf.reduce_mean(embed_matrix,0)
+    oov_embed = tf.reduce_mean(embed_matrix, 0)
 else:
     oov_embed = tf.zeros([embedding_size])
-embed_all_matrix = tf.concat([embed_matrix,[oov_embed]],0,name=feature_name + '_concat')
+embed_all_matrix = tf.concat([embed_matrix, [oov_embed]], 0, name=feature_name + '_concat')
 
-table = tf.contrib.lookup.index_table_from_tensor(mapping = vocabulary_list, default_value=-1,num_oov_buckets=1)
+table = tf.contrib.lookup.index_table_from_tensor(mapping=vocabulary_list, default_value=-1, num_oov_buckets=1)
 tags = table.lookup(features[feature_name])
 
 ```
