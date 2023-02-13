@@ -82,8 +82,10 @@ emb_tensors = [tf.feature_column.input_layer(features=features, feature_columns=
 deep_net = tf.concat(emb_tensors, 1)
 ```
 
-自测 embedding table
-
+自测 embedding table：一定内外分隔符的样本，多值特征会按照最多值的个数，填充任意值 ''，这种值和低频值，或者新值，三种可能都在字典中找不到，都是新的桶（embedding table粒度在一个特征域下），对应着字典数量+1的index，所以embedding table 字典数量+1的emb做成其他emb的均，这样就是刚才三类特征值的embedding了。\
+冷启动的embedding参与了反向传播和前向推理。\
+多值特征在制作时，当sql的prefix('1-field^feature',array())的array是空时，这个特征值会做出'1-field^null'等，这个当作正常特征字典使用也可以。
+多值特征的embedding是多个值的embedding的平均。
 ```python
 import tensorflow as tf
 
@@ -91,29 +93,68 @@ tf.__version__
 tf.enable_eager_execution()
 tf.executing_eagerly()
 
-embedding_size = 10
+# dataset
+# feature conf
+features_name_list = ['wk', 'hr', 'usermodel']
 features = {'wk': [['2-wk^6'],
                    ['2-wk^0'],
                    ['2-wk^1'],
                    ['2-wk^2'],
                    ['2-wk^6']],
             'hr': [['3-hr^08'], ['3-hr^09'], ['3-hr^16'], ['3-hr^23'], ['3-hr^09']]}
-feature_name = 'wk'
-coldstart_names = ['wk']
-vocabulary_list = ['2-wk^0', '2-wk^1', '2-wk^2', '2-wk^6']
+daily_feature = '15-usermodel^2023,15-usermodel^1234,15-usermodel^4567,15-usermodel^1101'
+daily_feature2 = '15-usermodel^2023,15-usermodel^1234'
+n = 2
+FIELD_OUTER_DELIM = ' '
+FIELD_INNER_DELIM = '\031'
+batch_size = len(features['wk'])
+tmp1 = [[FIELD_INNER_DELIM.join(daily_feature.split(','))]] * (batch_size - n)
+tmp2 = [[FIELD_INNER_DELIM.join(daily_feature2.split(','))]] * n
+features.setdefault('usermodel', tmp1 + tmp2)
+dataset = []
+for i in range(batch_size):
+    dataset_line_list = []
+    for feature_name_i in features_name_list:
+        dataset_line_list.append(features[feature_name_i][i][0])
+    dataset.append(FIELD_OUTER_DELIM.join(dataset_line_list))
+print(dataset)
 
-t = tf.initializers.random_normal(mean=0, stddev=0.1)
+# parse dataset to column tensor
+value = dataset
+feature_num = len(features_name_list)
+str_columns = tf.decode_csv(value, [''] * feature_num, field_delim=FIELD_OUTER_DELIM)
+for idx, column in enumerate(str_columns):
+    sparse_col = tf.strings.split(column, FIELD_INNER_DELIM)
+    dense_col = tf.sparse.to_dense(sparse_col, '')
+    features[features_name_list[idx]] = dense_col
+
+# cold start conf 
+COLDSTART_NAMES = ['usermodel']
+feature_name = 'usermodel'
+vocabulary_list = ['15-usermodel^2023', '15-usermodel^1234', '15-usermodel^4567']
+
+embedding_size = 10
 embed_matrix = tf.get_variable(name=feature_name + '_embmatrix', shape=[len(vocabulary_list), embedding_size],
-                               initializer=t, trainable=True)
-if feature_name in coldstart_names:
-    oov_embed = tf.reduce_mean(embed_matrix, 0)
-else:
-    oov_embed = tf.zeros([embedding_size])
-embed_all_matrix = tf.concat([embed_matrix, [oov_embed]], 0, name=feature_name + '_concat')
+                               initializer=tf.initializers.random_normal(mean=0, stddev=0.1), trainable=True)
+oov_embed = tf.reduce_mean(embed_matrix, 0) if feature_name in COLDSTART_NAMES else tf.zeros([embedding_size])
+embed_all_matrix = tf.concat([embed_matrix, [tf.convert_to_tensor(oov_embed)]], 0, name=feature_name + '_concat')
+## test stop gradient not success
+# with tf.variable_scope("foo", reuse=tf.AUTO_REUSE):
+#     oov_embed_var = tf.Variable([0.0] * embedding_size, trainable=False, name='oov_embed_var')
+#     oov_embed_var.assign(oov_embed)
+#     oov_embed_var_1 = tf.get_variable(name='oov_embed_var',shape=[embedding_size])
 
-table = tf.contrib.lookup.index_table_from_tensor(mapping=vocabulary_list, default_value=-1, num_oov_buckets=1)
+DEFAULT_VALUE = -1
+table = tf.contrib.lookup.index_table_from_tensor(mapping=vocabulary_list, default_value=DEFAULT_VALUE,
+                                                  num_oov_buckets=1)
 tags = table.lookup(features[feature_name])
+in_vocabulary_idx = tf.where(tf.not_equal(tags, DEFAULT_VALUE))
+gather_result = tf.gather_nd(tags, in_vocabulary_idx)
+sparse_tags = tf.SparseTensor(in_vocabulary_idx, gather_result, tf.shape(tags, out_type=tf.int64))
 
+embed_lookup = tf.nn.embedding_lookup_sparse(params=embed_all_matrix, sp_ids=sparse_tags, sp_weights=None,
+                                             combiner="mean")
+print("feature values:{},embedding is:{}".format(features[feature_name],embed_lookup))
 ```
 
 自测 输入函数的具体内容 见 src/biz/input_biz.py
@@ -209,6 +250,19 @@ loss = tf.losses.softmax_cross_entropy(labels, logits, scope="loss")
 双塔方案：loss采用softmax，但是物品向量侧需要由物品属性DNN得来，物品ID使用预训练的物品ID/或者就是物品ID。
 这样的思路是，尽量少训练参数，防止模型过拟合，因为大量的one-hot embedding将会产生大量的训练边。所以GCN用户侧到时候也可以直接使用训练好的embedding。
 
+学习tf
+```python
+import tensorflow as tf
+
+tf.__version__
+tf.enable_eager_execution()
+tf.executing_eagerly()
+
+x = tf.Variable(2.0)
+with tf.GradientTape() as g:
+    y = x ** 2
+print(g.gradient(y, x))
+```
 ## 注意事项
 
 ```
