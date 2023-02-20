@@ -110,7 +110,7 @@ FIELD_INNER_DELIM = '\031'
 batch_size = len(features['wk'])
 tmp1 = [[FIELD_INNER_DELIM.join(daily_feature.split(','))]] * (batch_size - n)
 tmp2 = [[FIELD_INNER_DELIM.join(daily_feature2.split(','))]] * n
-features.setdefault('usermodel', tmp1 + tmp2)
+features.setdefault('usermodel', tmp2 + tmp1)
 dataset = []
 for i in range(batch_size):
     dataset_line_list = []
@@ -120,12 +120,21 @@ for i in range(batch_size):
 print(dataset)
 
 # parse dataset to column tensor
+MULTI_VALUE_FEATURE = {'usermodel': 5}
 value = dataset
 feature_num = len(features_name_list)
 str_columns = tf.decode_csv(value, [''] * feature_num, field_delim=FIELD_OUTER_DELIM)
 for idx, column in enumerate(str_columns):
     sparse_col = tf.strings.split(column, FIELD_INNER_DELIM)
-    dense_col = tf.sparse.to_dense(sparse_col, '')
+    
+    if features_name_list[idx] in MULTI_VALUE_FEATURE:
+        dense_shape = tf.concat(
+                            [tf.gather_nd(sparse_col.dense_shape, [[0]]), [MULTI_VALUE_FEATURE[features_name_list[idx]]]], 0)
+    else:
+        dense_shape = sparse_col.dense_shape
+    # dense_shape=[sparse_col.dense_shape.numpy()[0],5]
+    # dense_col = tf.sparse.to_dense(sparse_col, '')
+    dense_col = tf.sparse_to_dense(sparse_col.indices, dense_shape, sparse_col.values, "")    
     features[features_name_list[idx]] = dense_col
 
 # cold start conf 
@@ -154,7 +163,7 @@ sparse_tags = tf.SparseTensor(in_vocabulary_idx, gather_result, tf.shape(tags, o
 
 embed_lookup = tf.nn.embedding_lookup_sparse(params=embed_all_matrix, sp_ids=sparse_tags, sp_weights=None,
                                              combiner="mean")
-print("feature values:{},embedding is:{}".format(features[feature_name],embed_lookup))
+print("feature values:{},embedding is:{}".format(features[feature_name], embed_lookup))
 ```
 
 自测 输入函数的具体内容 见 src/biz/input_biz.py
