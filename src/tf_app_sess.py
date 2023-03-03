@@ -3,8 +3,8 @@ import tensorflow as tf
 import numpy as np
 
 # 随机生成 100 点（x，y）
-
-x_data = np.random.rand(100).astype(np.float32)
+# [0,1）上的均匀分布
+x_data = np.random.rand(10).astype(np.float32)
 
 y_data = x_data * 0.1 + 0.3
 
@@ -20,7 +20,7 @@ y = W * x_data + b
 
 loss = tf.reduce_mean(tf.square(y - y_data))
 
-optimizer = tf.train.GradientDescentOptimizer(0.5)
+optimizer = tf.train.GradientDescentOptimizer(0.001) # 0.5
 
 train = optimizer.minimize(loss)
 
@@ -40,6 +40,6 @@ sess.run(init)
 
 for step in range(201):
     if step % 20 == 0:
-        print(step, sess.run(W), sess.run(b))
+        print(step, sess.run(W), sess.run(b), x_data, sess.run(y))
     sess.run(train)
 sess.close()
