@@ -51,9 +51,9 @@ def input_fn(data_path, epoch_num, batch_size, prefetch_num):
     return data_set.make_initializable_iterator()
 
 
-iterator_train = input_fn(data_path='/Users/yiche/dev/code/deep_model/data/data_esmm_block/train_data.txt',
+iterator_train = input_fn(data_path='/Users/yiche/dev/code/deep_model/data/esmm_block/train_data.txt',
                           batch_size=2, epoch_num=40, prefetch_num=5)
-iterator_eval = input_fn(data_path='/Users/yiche/dev/code/deep_model/data/data_esmm_block/eval_data.txt',
+iterator_eval = input_fn(data_path='/Users/yiche/dev/code/deep_model/data/esmm_block/eval_data.txt',
                          batch_size=10, epoch_num=None, prefetch_num=1)
 next_element_train = iterator_train.get_next()
 next_element_eval = iterator_eval.get_next()
