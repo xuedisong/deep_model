@@ -15,9 +15,12 @@ y = W * x_data + b
 loss = tf.reduce_mean(tf.square(y - y_data))
 
 tf.summary.scalar("loss", loss)
+tf.summary.scalar("W", tf.reshape(W, []))
+tf.summary.scalar("b", tf.reshape(b, []))
 
 optimizer = tf.train.GradientDescentOptimizer(0.5)
-train = optimizer.minimize(loss)
+train_W = optimizer.minimize(loss, var_list=[W])
+train_b = optimizer.minimize(loss, var_list=[b])
 
 sess = tf.Session()
 sess.run(tf.global_variables_initializer())
@@ -26,7 +29,7 @@ merged = tf.summary.merge_all()
 
 model_dir = '/Users/yiche/dev/code/deep_model/model/esmm_block'
 write_train = tf.summary.FileWriter(model_dir, sess.graph)
-write_eval = tf.summary.FileWriter(model_dir + '/eval', sess.graph)
+write_eval = tf.summary.FileWriter(model_dir + '/eval')
 
 for step in range(201):
     if step % 1 == 0:
@@ -42,7 +45,10 @@ for step in range(201):
         saver.save(sess, '/Users/yiche/dev/code/deep_model/model/esmm_block' + '/model.ckpt', global_step=step,
                    write_meta_graph=True)
     # update model variable
-    sess.run(train, feed_dict={x_data: x_data_train, y_data: y_data_train})
+    if step % 2 == 0:
+        sess.run(train_W, feed_dict={x_data: x_data_train, y_data: y_data_train})
+    else:
+        sess.run(train_b, feed_dict={x_data: x_data_train, y_data: y_data_train})
 write_train.close()
 write_eval.close()
 sess.close()
