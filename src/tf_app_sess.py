@@ -1,8 +1,8 @@
 import tensorflow as tf
-import numpy as np
 
 
 # 随机生成 100 点（x，y）, [0,1）上的均匀分布 作为训练集和测试集
+# import numpy as np
 # x_data_sample = np.random.rand(10).astype(np.float32)
 # y_data_sample = x_data_sample * 0.1 + 0.3
 # for i in range(len(x_data_sample)):
