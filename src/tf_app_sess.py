@@ -77,38 +77,34 @@ optimizer = tf.train.GradientDescentOptimizer(0.5)
 train_W = optimizer.minimize(loss, var_list=[W])
 train_b = optimizer.minimize(loss, var_list=[b])
 
-sess = tf.Session()
-sess.run(tf.global_variables_initializer())
-sess.run(iterator_train.initializer)
-sess.run(iterator_eval.initializer)
-saver = tf.train.Saver(tf.global_variables(), max_to_keep=2500)
-merged = tf.summary.merge_all()
+with tf.Session() as sess:
+    sess.run(tf.global_variables_initializer())
+    sess.run(iterator_train.initializer)
+    sess.run(iterator_eval.initializer)
+    saver = tf.train.Saver(tf.global_variables(), max_to_keep=2500)
+    merged = tf.summary.merge_all()
 
-model_dir = '/Users/yiche/dev/code/deep_model/model/esmm_block'
-write_train = tf.summary.FileWriter(model_dir, sess.graph)
-write_eval = tf.summary.FileWriter(model_dir + '/eval')
-
-log_train_step = 1
-log_eval_step = 10
-checkpoint_step = 5
-step = 0
-while True:
-    try:
-        features_train, labels_train = sess.run(next_element_train)  # 注意：要一次性读取出x、y，因为sess.run(x)时也会把y取出
-        feed_dict_train = {features[k]: v for k, v in features_train.items()}
-        for k, v in labels_train.items():
-            feed_dict_train[labels[k]] = v
-    except tf.errors.OutOfRangeError:
-        break
-    # 记录过程信息
-    save_summary()
-    # update model variable
-    if step % 2 == 0:
-        sess.run(train_W, feed_dict=feed_dict_train)
-    else:
-        sess.run(train_b, feed_dict=feed_dict_train)
-    step = step + 1
-
-write_train.close()
-write_eval.close()
-sess.close()
+    model_dir = '/Users/yiche/dev/code/deep_model/model/esmm_block'
+    log_train_step = 1
+    log_eval_step = 10
+    checkpoint_step = 5
+    step = 0
+    with tf.summary.FileWriter(model_dir, sess.graph) as write_train:
+        with tf.summary.FileWriter(model_dir + '/eval') as write_eval:
+            while True:
+                try:
+                    features_train, labels_train = sess.run(
+                        next_element_train)  # 注意：要一次性读取出x、y，因为sess.run(x)时也会把y取出
+                    feed_dict_train = {features[k]: v for k, v in features_train.items()}
+                    for k, v in labels_train.items():
+                        feed_dict_train[labels[k]] = v
+                except tf.errors.OutOfRangeError:
+                    break
+                # 记录过程信息
+                save_summary()
+                # update model variable
+                if step % 2 == 0:
+                    sess.run(train_W, feed_dict=feed_dict_train)
+                else:
+                    sess.run(train_b, feed_dict=feed_dict_train)
+                step = step + 1
