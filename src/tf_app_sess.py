@@ -8,6 +8,31 @@ import numpy as np
 # for i in range(len(x_data_sample)):
 #     print(x_data_sample[i], y_data_sample[i])
 
+def log_local(_sess, _step, _x_data, _y_data, tag):
+    print(tag, _step, _sess.run(W),
+          _sess.run(b),
+          _x_data,
+          _y_data,
+          sess.run(y, feed_dict={x_data: _x_data,
+                                 y_data: _y_data}),
+          sess.run(loss, feed_dict={x_data: _x_data,
+                                    y_data: _y_data}))
+
+
+def save_summary():
+    if step % log_train_step == 0:
+        log_local(sess, step, x_data_train, y_data_train, 'train')
+        summary_train = sess.run(merged, feed_dict={x_data: x_data_train, y_data: y_data_train})
+        write_train.add_summary(summary_train, step)
+    if step % log_eval_step == 0:
+        _x_data_eval, _y_data_eval = sess.run(next_element_eval)
+        log_local(sess, step, _x_data_eval, _y_data_eval, 'eval')
+        summary_eval = sess.run(merged, feed_dict={x_data: _x_data_eval, y_data: _y_data_eval})
+        write_eval.add_summary(summary_eval, step)
+    if checkpoint_step % 5 == 0:
+        saver.save(sess, model_dir + '/model.ckpt', global_step=step,
+                   write_meta_graph=True)
+
 
 def input_fn(data_path, epoch_num, batch_size, prefetch_num):
     def _map_function(value: str):
@@ -59,45 +84,23 @@ model_dir = '/Users/yiche/dev/code/deep_model/model/esmm_block'
 write_train = tf.summary.FileWriter(model_dir, sess.graph)
 write_eval = tf.summary.FileWriter(model_dir + '/eval')
 
-eval_per_step = 10
+log_train_step = 1
+log_eval_step = 10
+checkpoint_step = 5
 step = 0
 while True:
     try:
-        if step % 1 == 0:
-            x_data_train, y_data_train = sess.run(next_element_train)
-            print('train', step, sess.run(W),
-                  sess.run(b),
-                  x_data_train,
-                  y_data_train,
-                  sess.run(y, feed_dict={x_data: x_data_train,
-                                         y_data: y_data_train}),
-                  sess.run(loss, feed_dict={x_data: x_data_train,
-                                            y_data: y_data_train}))
-            summary_train = sess.run(merged, feed_dict={x_data: x_data_train, y_data: y_data_train})
-            write_train.add_summary(summary_train, step)
-        if step % eval_per_step == 0:
-            x_data_eval, y_data_eval = sess.run(next_element_eval)
-            summary_eval = sess.run(merged, feed_dict={x_data: x_data_eval, y_data: y_data_eval})
-            write_eval.add_summary(summary_eval, step)
-            print('eval', step, sess.run(W),
-                  sess.run(b),
-                  x_data_eval,
-                  y_data_eval,
-                  sess.run(y, feed_dict={x_data: x_data_eval,
-                                         y_data: y_data_eval}),
-                  sess.run(loss, feed_dict={x_data: x_data_eval,
-                                            y_data: y_data_eval}))
-        if step % 5 == 0:
-            saver.save(sess, '/Users/yiche/dev/code/deep_model/model/esmm_block' + '/model.ckpt', global_step=step,
-                       write_meta_graph=True)
-        # update model variable
-        if step % 2 == 0:
-            sess.run(train_W, feed_dict={x_data: x_data_train, y_data: y_data_train})
-        else:
-            sess.run(train_b, feed_dict={x_data: x_data_train, y_data: y_data_train})
-        step = step + 1
+        x_data_train, y_data_train = sess.run(next_element_train)
     except tf.errors.OutOfRangeError:
         break
+    # 记录过程信息
+    save_summary()
+    # update model variable
+    if step % 2 == 0:
+        sess.run(train_W, feed_dict={x_data: x_data_train, y_data: y_data_train})
+    else:
+        sess.run(train_b, feed_dict={x_data: x_data_train, y_data: y_data_train})
+    step = step + 1
 
 write_train.close()
 write_eval.close()
