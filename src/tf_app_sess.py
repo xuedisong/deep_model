@@ -8,26 +8,27 @@ import tensorflow as tf
 # for i in range(len(x_data_sample)):
 #     print(x_data_sample[i], y_data_sample[i])
 
-def log_local(_sess, _step, _x_data, _y_data, tag):
+def log_local(_sess, _step, _feed_dict, tag):
     print(tag, _step, _sess.run(W),
           _sess.run(b),
-          _x_data,
-          _y_data,
-          sess.run(y, feed_dict={x_data: _x_data,
-                                 y_data: _y_data}),
-          sess.run(loss, feed_dict={x_data: _x_data,
-                                    y_data: _y_data}))
+          _feed_dict[features['x_data']],
+          _feed_dict[labels['y_data']],
+          sess.run(y, feed_dict=_feed_dict),
+          sess.run(loss, feed_dict=_feed_dict))
 
 
 def save_summary():
     if step % log_train_step == 0:
-        log_local(sess, step, x_data_train, y_data_train, 'train')
-        summary_train = sess.run(merged, feed_dict={x_data: x_data_train, y_data: y_data_train})
+        log_local(sess, step, feed_dict_train, 'train')
+        summary_train = sess.run(merged, feed_dict=feed_dict_train)
         write_train.add_summary(summary_train, step)
     if step % log_eval_step == 0:
-        _x_data_eval, _y_data_eval = sess.run(next_element_eval)
-        log_local(sess, step, _x_data_eval, _y_data_eval, 'eval')
-        summary_eval = sess.run(merged, feed_dict={x_data: _x_data_eval, y_data: _y_data_eval})
+        _features_eval, _labels_eval = sess.run(next_element_eval)
+        _feed_dict_eval = {features[k]: v for k, v in _features_eval.items()}
+        for k, v in _labels_eval.items():
+            _feed_dict_eval[labels[k]] = v
+        log_local(sess, step, _feed_dict_eval, 'eval')
+        summary_eval = sess.run(merged, feed_dict=_feed_dict_eval)
         write_eval.add_summary(summary_eval, step)
     if checkpoint_step % 5 == 0:
         saver.save(sess, model_dir + '/model.ckpt', global_step=step,
@@ -39,7 +40,7 @@ def input_fn(data_path, epoch_num, batch_size, prefetch_num):
         cols = tf.decode_csv(value, [0.0] * 2, field_delim=' ')
         tf.print('data_path:{},epoch_num:{},batch_size:{}'.format(data_path, epoch_num, batch_size))
         tf.print(cols)
-        return cols[0], cols[1]
+        return {'x_data': cols[0], 'x_data2': cols[0]}, {'y_data': cols[1], 'y_data2': cols[1]}
 
     # .shuffle(buffer_size=10 * 3) \
     data_set = tf.data.TextLineDataset(
@@ -58,12 +59,15 @@ iterator_eval = input_fn(data_path='/Users/yiche/dev/code/deep_model/data/esmm_b
 next_element_train = iterator_train.get_next()
 next_element_eval = iterator_eval.get_next()
 
-x_data = tf.placeholder(tf.float32, [None])
-y_data = tf.placeholder(tf.float32, [None])
+features = {'x_data': tf.placeholder(tf.float32, [None], name='x_data_ph'),
+            'x_data2': tf.placeholder(tf.float32, [None], name='x_data2_ph')}
+labels = {'y_data': tf.placeholder(tf.float32, [None], name='y_data_ph'),
+          'y_data2': tf.placeholder(tf.float32, [None], name='y_data2_ph')}
+
 W = tf.Variable(tf.random_uniform([1], -1.0, 1.0))
 b = tf.Variable(tf.zeros([1]))
-y = W * x_data + b
-loss = tf.reduce_mean(tf.square(y - y_data))
+y = W * features['x_data'] + b
+loss = tf.reduce_mean(tf.square(y - labels['y_data']))
 
 tf.summary.scalar("loss", loss)
 tf.summary.scalar("W", tf.reshape(W, []))
@@ -90,16 +94,19 @@ checkpoint_step = 5
 step = 0
 while True:
     try:
-        x_data_train, y_data_train = sess.run(next_element_train)  # 注意：要一次性读取出x、y，因为sess.run(x)时也会把y取出
+        features_train, labels_train = sess.run(next_element_train)  # 注意：要一次性读取出x、y，因为sess.run(x)时也会把y取出
+        feed_dict_train = {features[k]: v for k, v in features_train.items()}
+        for k, v in labels_train.items():
+            feed_dict_train[labels[k]] = v
     except tf.errors.OutOfRangeError:
         break
     # 记录过程信息
     save_summary()
     # update model variable
     if step % 2 == 0:
-        sess.run(train_W, feed_dict={x_data: x_data_train, y_data: y_data_train})
+        sess.run(train_W, feed_dict=feed_dict_train)
     else:
-        sess.run(train_b, feed_dict={x_data: x_data_train, y_data: y_data_train})
+        sess.run(train_b, feed_dict=feed_dict_train)
     step = step + 1
 
 write_train.close()
