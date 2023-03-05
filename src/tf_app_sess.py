@@ -90,7 +90,7 @@ checkpoint_step = 5
 step = 0
 while True:
     try:
-        x_data_train, y_data_train = sess.run(next_element_train)
+        x_data_train, y_data_train = sess.run(next_element_train)  # 注意：要一次性读取出x、y，因为sess.run(x)时也会把y取出
     except tf.errors.OutOfRangeError:
         break
     # 记录过程信息
