@@ -108,7 +108,8 @@ tf.summary.scalar("b", tf.reshape(b, []))
 
 optimizer = tf.train.GradientDescentOptimizer(0.5)
 train_W = optimizer.minimize(loss, var_list=[W])
-train_b = optimizer.minimize(loss, var_list=[b])
+global_step = tf.Variable(0, trainable=False, name='global_step', dtype='int64')
+train_b = optimizer.minimize(loss, var_list=[b], global_step=global_step)
 
 with tf.Session() as sess:
     sess.run(tf.global_variables_initializer())
