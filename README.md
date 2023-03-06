@@ -23,6 +23,7 @@ conda deactivate
 
 ```python
 import tensorflow as tf
+from tensorflow.python.ops import math_ops
 
 tf.__version__
 tf.enable_eager_execution()
@@ -30,10 +31,11 @@ tf.executing_eagerly()
 logit = tf.convert_to_tensor([[1], [2], [3], [4], [5], [6]], dtype=tf.float32)
 label = tf.convert_to_tensor([[0], [1], [0], [0], [0], [1]], dtype=tf.float32)
 prob = tf.sigmoid(logit)
+# math_ops.mul(prob,label)
 sample_loss = tf.multiply(50 * label, -tf.log(prob)) + tf.multiply(1 - label, -tf.log(1 - prob))
 loss = tf.reduce_sum(sample_loss, 0) / len(sample_loss)
 sample_loss = tf.nn.weighted_cross_entropy_with_logits(label, logit, 50)
-loss = tf.losses.compute_weighted_loss(sample_loss)
+loss = tf.losses.compute_weighted_loss(sample_loss) # 与上面loss相等，
 ```
 
 自测 数据流

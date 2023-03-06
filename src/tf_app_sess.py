@@ -1,4 +1,10 @@
 import tensorflow as tf
+import numpy as np
+from sklearn.metrics import roc_auc_score
+
+y_true = [1, 1, 0, 0, 1, 1, 0]
+y_pred = [0.8, 0.7, 0.5, 0.5, 0.5, 0.5, 0.3]
+print(roc_auc_score(y_true, y_pred))
 
 
 # 随机生成 100 点（x，y）, [0,1）上的均匀分布 作为训练集和测试集
@@ -9,12 +15,15 @@ import tensorflow as tf
 #     print(x_data_sample[i], y_data_sample[i])
 
 def log_local(_sess, _step, _feed_dict, tag):
+    _y_pred = sess.run(y, feed_dict=_feed_dict)
+    _y_true = [1 if i > 0.35 else 0 for i in _feed_dict[labels['y_data']]]
     print(tag, _step, _sess.run(W),
           _sess.run(b),
           _feed_dict[features['x_data']],
           _feed_dict[labels['y_data']],
           sess.run(y, feed_dict=_feed_dict),
-          sess.run(loss, feed_dict=_feed_dict))
+          sess.run(loss, feed_dict=_feed_dict),
+          roc_auc_score(_y_true, _y_pred))
 
 
 def save_summary():
@@ -53,7 +62,7 @@ def input_fn(data_path, epoch_num, batch_size, prefetch_num):
 
 
 iterator_train = input_fn(data_path='/Users/yiche/dev/code/deep_model/data/esmm_block/train_data.txt',
-                          batch_size=2, epoch_num=40, prefetch_num=5)
+                          batch_size=10, epoch_num=8, prefetch_num=5)
 iterator_eval = input_fn(data_path='/Users/yiche/dev/code/deep_model/data/esmm_block/eval_data.txt',
                          batch_size=10, epoch_num=None, prefetch_num=1)
 next_element_train = iterator_train.get_next()
@@ -86,7 +95,7 @@ with tf.Session() as sess:
 
     model_dir = '/Users/yiche/dev/code/deep_model/model/esmm_block'
     log_train_step = 1
-    log_eval_step = 10
+    log_eval_step = 2
     checkpoint_step = 5
     step = 0
     with tf.summary.FileWriter(model_dir, sess.graph) as write_train:
