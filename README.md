@@ -126,15 +126,15 @@ feature_num = len(features_name_list)
 str_columns = tf.decode_csv(value, [''] * feature_num, field_delim=FIELD_OUTER_DELIM)
 for idx, column in enumerate(str_columns):
     sparse_col = tf.strings.split(column, FIELD_INNER_DELIM)
-    
+
     if features_name_list[idx] in MULTI_VALUE_FEATURE:
         dense_shape = tf.concat(
-                            [tf.gather_nd(sparse_col.dense_shape, [[0]]), [MULTI_VALUE_FEATURE[features_name_list[idx]]]], 0)
+            [tf.gather_nd(sparse_col.dense_shape, [[0]]), [MULTI_VALUE_FEATURE[features_name_list[idx]]]], 0)
     else:
         dense_shape = sparse_col.dense_shape
     # dense_shape=[sparse_col.dense_shape.numpy()[0],5]
     # dense_col = tf.sparse.to_dense(sparse_col, '')
-    dense_col = tf.sparse_to_dense(sparse_col.indices, dense_shape, sparse_col.values, "")    
+    dense_col = tf.sparse_to_dense(sparse_col.indices, dense_shape, sparse_col.values, "")
     features[features_name_list[idx]] = dense_col
 
 # cold start conf 
@@ -159,6 +159,7 @@ table = tf.contrib.lookup.index_table_from_tensor(mapping=vocabulary_list, defau
 tags = table.lookup(features[feature_name])
 in_vocabulary_idx = tf.where(tf.not_equal(tags, DEFAULT_VALUE))
 gather_result = tf.gather_nd(tags, in_vocabulary_idx)
+test_a = tf.reshape(gather_result, [-1, 1])  # test lixin
 sparse_tags = tf.SparseTensor(in_vocabulary_idx, gather_result, tf.shape(tags, out_type=tf.int64))
 
 embed_lookup = tf.nn.embedding_lookup_sparse(params=embed_all_matrix, sp_ids=sparse_tags, sp_weights=None,

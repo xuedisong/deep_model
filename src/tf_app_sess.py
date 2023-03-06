@@ -30,7 +30,7 @@ def save_summary():
         log_local(sess, step, _feed_dict_eval, 'eval')
         summary_eval = sess.run(merged, feed_dict=_feed_dict_eval)
         write_eval.add_summary(summary_eval, step)
-    if checkpoint_step % 5 == 0:
+    if step % checkpoint_step == 0:
         saver.save(sess, model_dir + '/model.ckpt', global_step=step,
                    write_meta_graph=True)
 
