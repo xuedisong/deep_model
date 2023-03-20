@@ -19,6 +19,53 @@ conda deactivate
   输入函数 解析文件，是python原生代码的，没有利用tf的API,可以直接debug.
   但是这些debug出来的可以看出是tensor了，但是tensor里的具体内容是看不出来的。
 
+自测 cvr_gate_reg_loss
+
+```python
+import tensorflow as tf
+from tensorflow.python.ops import math_ops
+
+tf.__version__
+tf.enable_eager_execution()
+tf.executing_eagerly()
+
+GATE_EXPERT_SCOPE = 'gate_expert'
+
+feature_list = ['hr', 'wk', 'sex']
+ctr_expert0_gate = {}
+ctr_expert1_gate = {}
+cvr_expert0_gate = {}
+cvr_expert1_gate = {}
+gate = {'ctr': {'expert0': ctr_expert0_gate, 'expert1': ctr_expert1_gate},
+        'cvr': {'expert0': cvr_expert0_gate, 'expert1': cvr_expert1_gate}}
+for feature_name in feature_list:
+    ctr_expert0_gate[feature_name] = tf.Variable(1.0, trainable=False,
+                                                 name='ctr_{}0_{}'.format(GATE_EXPERT_SCOPE, feature_name),
+                                                 dtype='float32')
+    ctr_expert1_gate[feature_name] = tf.Variable(0.0, trainable=False,
+                                                 name='ctr_{}1_{}'.format(GATE_EXPERT_SCOPE, feature_name),
+                                                 dtype='float32')
+
+for feature_name in feature_list:
+    cvr_expert0_gate[feature_name] = tf.Variable(40.0, trainable=True,
+                                                 name='cvr_{}0_{}'.format(GATE_EXPERT_SCOPE, feature_name),
+                                                 dtype='float32')
+    cvr_expert1_gate[feature_name] = tf.Variable(10.0, trainable=True,
+                                                 name='cvr_{}1_{}'.format(GATE_EXPERT_SCOPE, feature_name),
+                                                 dtype='float32')
+
+ctr_cvr_common_field = feature_list
+w_expert = [(v, gate['cvr']['expert1'][k]) for k, v in gate['cvr']['expert0'].items() if
+            k in ctr_cvr_common_field]
+w_expert_matrix = list(zip(*w_expert))
+w_expert_tensor = tf.convert_to_tensor(w_expert_matrix)
+
+transfer_w = tf.reduce_mean(tf.divide(w_expert_tensor, tf.reduce_sum(w_expert_tensor, axis=0)), axis=1)
+transfer_rate = tf.gather_nd(tf.divide(transfer_w, tf.reduce_sum(transfer_w)), [0])
+TRANSFER_RATE_THRESHOLD = 0.9
+cvr_gate_reg_loss = 10000 * tf.maximum(TRANSFER_RATE_THRESHOLD - transfer_rate, 0)
+```
+
 自测 loss
 
 ```python

@@ -2,7 +2,7 @@ import tensorflow as tf
 import numpy as np
 
 
-# from sklearn.metrics import roc_auc_score
+from sklearn.metrics import roc_auc_score as roc_auc_score_1
 
 def roc_auc_score(labels, preds, n_bins=100):
     postive_len = sum(labels)
@@ -41,13 +41,17 @@ print(roc_auc_score(y_true, y_pred))
 def log_local(_sess, _step, _feed_dict, tag):
     _y_pred = sess.run(y, feed_dict=_feed_dict)
     _y_true = [1 if i > 0.35 else 0 for i in _feed_dict[labels['y_data']]]
+    summary_auc_value = sess.run([auc_value, auc_op], feed_dict=_feed_dict)
     print(tag, _step, _sess.run(W),
           _sess.run(b),
           _feed_dict[features['x_data']],
-          _feed_dict[labels['y_data']],
+          _y_true,
+          _feed_dict[labels['y_data2']],
           sess.run(y, feed_dict=_feed_dict),
           sess.run(loss, feed_dict=_feed_dict),
-          roc_auc_score(_y_true, _y_pred))
+          roc_auc_score(_y_true, _y_pred),
+          roc_auc_score_1(_y_true,_y_pred),
+          summary_auc_value)
 
 
 def save_summary():
@@ -73,7 +77,11 @@ def input_fn(data_path, epoch_num, batch_size, prefetch_num):
         cols = tf.decode_csv(value, [0.0] * 2, field_delim=' ')
         tf.print('data_path:{},epoch_num:{},batch_size:{}'.format(data_path, epoch_num, batch_size))
         tf.print(cols)
-        return {'x_data': cols[0], 'x_data2': cols[0]}, {'y_data': cols[1], 'y_data2': cols[1]}
+        # tf.print([1 if i > 0.35 else 0 for i in cols[1]])
+        tf.print(cols[1])
+        tf.print(tf.greater(cols[1], tf.constant(0.35)))
+        return {'x_data': cols[0], 'x_data2': cols[0]}, {'y_data': cols[1],
+                                                         'y_data2': tf.greater(cols[1], tf.constant(0.35))}
 
     # .shuffle(buffer_size=10 * 3) \
     data_set = tf.data.TextLineDataset(
@@ -86,9 +94,9 @@ def input_fn(data_path, epoch_num, batch_size, prefetch_num):
 
 
 iterator_train = input_fn(data_path='/Users/yiche/dev/code/deep_model/data/esmm_block/train_data.txt',
-                          batch_size=10, epoch_num=8, prefetch_num=5)
+                          batch_size=10, epoch_num=1, prefetch_num=0)
 iterator_eval = input_fn(data_path='/Users/yiche/dev/code/deep_model/data/esmm_block/eval_data.txt',
-                         batch_size=10, epoch_num=None, prefetch_num=1)
+                         batch_size=20, epoch_num=None, prefetch_num=1)
 next_element_train = iterator_train.get_next()
 next_element_eval = iterator_eval.get_next()
 
@@ -101,10 +109,12 @@ W = tf.Variable(tf.random_uniform([1], -1.0, 1.0))
 b = tf.Variable(tf.zeros([1]))
 y = W * features['x_data'] + b
 loss = tf.reduce_mean(tf.square(y - labels['y_data']))
+auc_value, auc_op = tf.metrics.auc(labels['y_data2'], y, name='auc_ydata2')
 
 tf.summary.scalar("loss", loss)
 tf.summary.scalar("W", tf.reshape(W, []))
 tf.summary.scalar("b", tf.reshape(b, []))
+tf.summary.scalar("auc_data2", auc_value)
 
 optimizer = tf.train.GradientDescentOptimizer(0.5)
 train_W = optimizer.minimize(loss, var_list=[W])
@@ -112,7 +122,9 @@ global_step = tf.Variable(0, trainable=False, name='global_step', dtype='int64')
 train_b = optimizer.minimize(loss, var_list=[b], global_step=global_step)
 
 with tf.Session() as sess:
+    # init = tf.group(tf.global_variables_initializer(), tf.local_variables_initializer())
     sess.run(tf.global_variables_initializer())
+    sess.run(tf.local_variables_initializer())
     sess.run(iterator_train.initializer)
     sess.run(iterator_eval.initializer)
     saver = tf.train.Saver(tf.global_variables(), max_to_keep=2500)
