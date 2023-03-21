@@ -59,9 +59,10 @@ w_expert = [(v, gate['cvr']['expert1'][k]) for k, v in gate['cvr']['expert0'].it
             k in ctr_cvr_common_field]
 w_expert_matrix = list(zip(*w_expert))
 w_expert_tensor = tf.convert_to_tensor(w_expert_matrix)
-
-transfer_w = tf.reduce_mean(tf.divide(w_expert_tensor, tf.reduce_sum(w_expert_tensor, axis=0)), axis=1)
-transfer_rate = tf.gather_nd(tf.divide(transfer_w, tf.reduce_sum(transfer_w)), [0])
+transfer_w=tf.divide(w_expert_tensor, tf.reduce_sum(w_expert_tensor, axis=0))
+transfer_w_sum = tf.reduce_mean(transfer_w, axis=1)
+transfer_w_vector=tf.divide(transfer_w_sum, tf.reduce_sum(transfer_w_sum))
+transfer_rate = tf.gather_nd(transfer_w_vector, [0])
 TRANSFER_RATE_THRESHOLD = 0.9
 cvr_gate_reg_loss = 10000 * tf.maximum(TRANSFER_RATE_THRESHOLD - transfer_rate, 0)
 ```
