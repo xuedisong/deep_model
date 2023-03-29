@@ -19,6 +19,37 @@ conda deactivate
   输入函数 解析文件，是python原生代码的，没有利用tf的API,可以直接debug.
   但是这些debug出来的可以看出是tensor了，但是tensor里的具体内容是看不出来的。
 
+自测 按采样比 选择样本空间数据集
+```python
+import tensorflow as tf
+from tensorflow.python.ops import math_ops
+
+tf.__version__
+tf.enable_eager_execution()
+tf.executing_eagerly()
+
+is_click = 1
+is_click_value = 1.0 if is_click else 0.0
+label_click = [[1], [0], [1], [0], [1]]
+label_click = tf.convert_to_tensor(label_click, dtype=tf.float32)
+logit_origin = [[11], [12], [13.0], [14.0], [15.0]]
+logit_origin = tf.convert_to_tensor(logit_origin, dtype=tf.float32)
+label_conv_origin = [[1], [0], [0], [0], [1]]
+label_conv_origin = tf.convert_to_tensor(label_conv_origin, dtype=tf.float32)
+indices = tf.where(tf.equal(label_click, is_click_value))
+logit_target = tf.reshape(tf.gather_nd(logit_origin, indices), [-1, 1])
+label_conv_target = tf.reshape(tf.gather_nd(label_conv_origin, indices), [-1, 1])
+
+# indices ratio
+ratio = 1.5
+
+indices1 = tf.where(tf.less_equal(tf.random_uniform([tf.gather(indices.shape, 0), 1]), ratio))
+logit_target1 = tf.reshape(tf.gather_nd(logit_target, indices1), [-1, 1])
+label_conv_target1 = tf.reshape(tf.gather_nd(label_conv_target, indices1), [-1, 1])
+
+logit_target1, label_conv_target1
+```
+
 自测 cvr_gate_reg_loss
 
 ```python
