@@ -19,6 +19,14 @@ conda deactivate
   输入函数 解析文件，是python原生代码的，没有利用tf的API,可以直接debug.
   但是这些debug出来的可以看出是tensor了，但是tensor里的具体内容是看不出来的。
 
+自测按特征域排序
+不可以，tf对数据dataset stream支持很差，不支持string 排序
+
+自测初始化embedding
+```python
+
+```
+
 自测 按采样比 选择样本空间数据集
 ```python
 import tensorflow as tf
@@ -205,6 +213,9 @@ MULTI_VALUE_FEATURE = {'usermodel': 5}
 value = dataset
 feature_num = len(features_name_list)
 str_columns = tf.decode_csv(value, [''] * feature_num, field_delim=FIELD_OUTER_DELIM)
+# 按照特征域ID排序
+# a=tf.convert_to_tensor(sorted(str_columns.numpy()), tf.string)
+
 for idx, column in enumerate(str_columns):
     sparse_col = tf.strings.split(column, FIELD_INNER_DELIM)
 
@@ -223,9 +234,10 @@ COLDSTART_NAMES = ['usermodel']
 feature_name = 'usermodel'
 vocabulary_list = ['15-usermodel^2023', '15-usermodel^1234', '15-usermodel^4567']
 
-embedding_size = 10
+embedding_size = 4
+emb_matrix_value=[[1,2,3,4],[2,3,4,5],[5,6,7,8]]
 embed_matrix = tf.get_variable(name=feature_name + '_embmatrix', shape=[len(vocabulary_list), embedding_size],
-                               initializer=tf.initializers.random_normal(mean=0, stddev=0.1), trainable=True)
+                               initializer=tf.constant_initializer(emb_matrix_value), trainable=True)
 oov_embed = tf.reduce_mean(embed_matrix, 0) if feature_name in COLDSTART_NAMES else tf.zeros([embedding_size])
 embed_all_matrix = tf.concat([embed_matrix, [tf.convert_to_tensor(oov_embed)]], 0, name=feature_name + '_concat')
 ## test stop gradient not success
