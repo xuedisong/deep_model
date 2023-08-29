@@ -193,6 +193,8 @@ features = {'wk': [['2-wk^6'],
             'hr': [['3-hr^08'], ['3-hr^09'], ['3-hr^16'], ['3-hr^23'], ['3-hr^09']]}
 daily_feature = '15-usermodel^2023,15-usermodel^1234,15-usermodel^4567,15-usermodel^1101'
 daily_feature2 = '15-usermodel^2023,15-usermodel^1234'
+daily_feature = '2023,1234,4567,1101'
+daily_feature2 = '2023,1234'
 n = 2
 FIELD_OUTER_DELIM = ' '
 FIELD_INNER_DELIM = '\031'
@@ -226,13 +228,16 @@ for idx, column in enumerate(str_columns):
         dense_shape = sparse_col.dense_shape
     # dense_shape=[sparse_col.dense_shape.numpy()[0],5]
     # dense_col = tf.sparse.to_dense(sparse_col, '')
-    dense_col = tf.sparse_to_dense(sparse_col.indices, dense_shape, sparse_col.values, "")
+    dense_col = tf.sparse_to_dense(sparse_col.indices, dense_shape, sparse_col.values, "-2")
     features[features_name_list[idx]] = dense_col
 
+# 字符串tensor转换为int tensor    
+# ee=tf.strings.to_number(dense_col,out_type=tf.dtypes.int64,name='ee')
 # cold start conf 
 COLDSTART_NAMES = ['usermodel']
 feature_name = 'usermodel'
 vocabulary_list = ['15-usermodel^2023', '15-usermodel^1234', '15-usermodel^4567']
+vocabulary_list = ['2023', '1234', '4567']
 
 embedding_size = 4
 emb_matrix_value=[[1,2,3,4],[2,3,4,5],[5,6,7,8]]
